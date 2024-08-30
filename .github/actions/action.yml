@@ -44,7 +44,7 @@ runs:
         if ($IsWindows) {
           .\action_repo\myenv\Scripts\Activate; pip install -r action_repo/requirements.txt; pip install requests
         } else {
-          source action_repo/myenv/bin/activate; pip install -r action_repo/requirements.txt; pip install requests
+          . action_repo/myenv/bin/activate; pip install -r action_repo/requirements.txt; pip install requests
         }
       shell: pwsh  # Using PowerShell core which is platform-independent
 
@@ -115,7 +115,7 @@ runs:
         if ($IsWindows) {
           .\action_repo\myenv\Scripts\Activate
         } else {
-          source action_repo/myenv/bin/activate
+          . action_repo/myenv/bin/activate
         }
         Write-Output "Current directory:"
         Get-Location
@@ -153,6 +153,7 @@ runs:
         Write-Output "Debug: Displaying summary file content..."
         Get-Content $env:GITHUB_STEP_SUMMARY
       shell: pwsh
+
 
 
 

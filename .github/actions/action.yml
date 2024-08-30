@@ -38,15 +38,23 @@ runs:
       with:
         python-version: '3.12'
 
-    - name: Install dependencies
+    - name: Install dependencies (Linux/macOS)
+      if: runner.os != 'Windows'
       run: |
         python -m venv action_repo/myenv
-        if ($IsWindows) {
-          .\action_repo\myenv\Scripts\Activate; pip install -r action_repo/requirements.txt; pip install requests
-        } else {
-          . action_repo/myenv/bin/activate; pip install -r action_repo/requirements.txt; pip install requests
-        }
-      shell: pwsh  # Using PowerShell core which is platform-independent
+        source action_repo/myenv/bin/activate
+        pip install -r action_repo/requirements.txt
+        pip install requests
+      shell: bash  # Use bash shell for Unix-like systems
+
+    - name: Install dependencies (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        python -m venv action_repo/myenv
+        .\action_repo\myenv\Scripts\Activate
+        pip install -r action_repo/requirements.txt
+        pip install requests
+      shell: pwsh  # Use PowerShell for Windows
 
     - name: Wait for relevant jobs to complete or timeout
       id: wait_for_jobs
@@ -115,7 +123,7 @@ runs:
         if ($IsWindows) {
           .\action_repo\myenv\Scripts\Activate
         } else {
-          . action_repo/myenv/bin/activate
+          source action_repo/myenv/bin/activate
         }
         Write-Output "Current directory:"
         Get-Location
@@ -153,6 +161,7 @@ runs:
         Write-Output "Debug: Displaying summary file content..."
         Get-Content $env:GITHUB_STEP_SUMMARY
       shell: pwsh
+
 
 
 

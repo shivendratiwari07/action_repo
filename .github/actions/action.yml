@@ -41,7 +41,11 @@ runs:
     - name: Install dependencies
       run: |
         python -m venv action_repo/myenv
-        .\action_repo\myenv\Scripts\activate && pip install -r action_repo/requirements.txt && pip install requests
+        if ($IsWindows) {
+          .\action_repo\myenv\Scripts\Activate; pip install -r action_repo/requirements.txt; pip install requests
+        } else {
+          source action_repo/myenv/bin/activate; pip install -r action_repo/requirements.txt; pip install requests
+        }
       shell: pwsh  # Using PowerShell core which is platform-independent
 
     - name: Wait for relevant jobs to complete or timeout
@@ -108,7 +112,11 @@ runs:
         $env:REPO_NAME = "${{ inputs.repo_name }}"
         $env:CUSTOM_SERVICE_COOKIE = "${{ inputs.custom_service_cookie }}"
         $env:GITHUB_RUN_ID = "${{ inputs.run_id }}"
-        .\action_repo\myenv\Scripts\activate
+        if ($IsWindows) {
+          .\action_repo\myenv\Scripts\Activate
+        } else {
+          source action_repo/myenv/bin/activate
+        }
         Write-Output "Current directory:"
         Get-Location
         Write-Output "Listing the root directory files:"
@@ -145,6 +153,7 @@ runs:
         Write-Output "Debug: Displaying summary file content..."
         Get-Content $env:GITHUB_STEP_SUMMARY
       shell: pwsh
+
 
 
 # name: 'Collect Logs and Analyze'

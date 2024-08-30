@@ -159,7 +159,7 @@ runs:
           foreach ($file in $summary_files) {
             $job_name = [System.IO.Path]::GetFileNameWithoutExtension($file).Split("_analysis_")[0]
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "### Job Name: $job_name"
-            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "Appending content of file: $file into summary"
+            #Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "Appending content of file: $file into summary"
             (Get-Content $file) -replace 'Root Cause Summary:', 'Root cause of Job failure:' | Add-Content -Path $env:GITHUB_STEP_SUMMARY
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ""
           }

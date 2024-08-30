@@ -124,21 +124,21 @@ runs:
         echo "Current directory:"
         pwd
         echo "Listing the root directory files:"
-        ls -la action_repo
+        ls -la action_repo/.github/actions/script/
         python action_repo/.github/actions/script/debug_fetch_logs.py
       shell: bash
 
     - name: List files after analysis
       run: |
-        echo "Listing the files in the action_repo/script directory"
-        ls -la action_repo/script/
+        echo "Listing the files in the action_repo/.github/actions/script directory"
+        ls -la action_repo/.github/actions/script/
       shell: bash
 
     - name: Display analysis summary
       if: always()
       run: |
         echo "Debug: Checking if summary files exist..."
-        summary_files=$(ls action_repo/script/*_analysis_*.txt 2>/dev/null || true)
+        summary_files=$(ls action_repo/.github/actions/script/*_analysis_*.txt 2>/dev/null || true)
         echo "Found summary files: $summary_files"
         if [ -n "$summary_files" ]; then
           for file in $summary_files; do

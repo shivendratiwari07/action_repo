@@ -20,6 +20,8 @@ inputs:
 
 runs:
   using: 'composite'
+  env:
+    SCRIPT_PATH: action_repo/.github/actions/script  # Define the global path variable here
   steps:
     - name: Checkout action repository
       uses: actions/checkout@v4
@@ -32,6 +34,11 @@ runs:
         echo "Listing the files in the action_repo directory"
         python -c "import os; print(os.getcwd()); [print(f) for f in os.listdir('action_repo')]"
       shell: pwsh
+
+    - name: Print detected operating system
+      run: |
+        echo "Detected operating system: ${{ runner.os }}"
+      shell: bash  # or pwsh depending on where you want this to run
       
     - name: Set up Python 3.12
       uses: actions/setup-python@v4
@@ -124,8 +131,8 @@ runs:
         echo "Current directory:"
         pwd
         echo "Listing the root directory files:"
-        ls -la action_repo/.github/actions/script/
-        python action_repo/.github/actions/script/debug_fetch_logs.py
+        ls -la $SCRIPT_PATH
+        python $SCRIPT_PATH/debug_fetch_logs.py
       shell: bash
 
     - name: Run log analysis (Windows)
@@ -140,26 +147,26 @@ runs:
         Write-Output "Current directory:"
         Get-Location
         Write-Output "Listing the root directory files:"
-        Get-ChildItem action_repo/.github/actions/script/
-        python action_repo/.github/actions/script/debug_fetch_logs.py
+        Get-ChildItem $env:SCRIPT_PATH
+        python $env:SCRIPT_PATH/debug_fetch_logs.py
       shell: pwsh
 
     - name: List files after analysis
       run: |
-        Write-Output "Listing the files in the action_repo/.github/actions/script directory"
-        Get-ChildItem action_repo/.github/actions/script/
+        Write-Output "Listing the files in the $env:SCRIPT_PATH directory"
+        Get-ChildItem $env:SCRIPT_PATH
       shell: pwsh
 
     - name: Display analysis summary
       if: always()
       run: |
         Write-Output "Debug: Checking if summary files exist..."
-        $summary_files = Get-ChildItem action_repo/.github/actions/script/*_analysis_*.txt -ErrorAction SilentlyContinue
+        $summary_files = Get-ChildItem $env:SCRIPT_PATH/*_analysis_*.txt -ErrorAction SilentlyContinue
         if ($summary_files) {
           foreach ($file in $summary_files) {
             $job_name = [System.IO.Path]::GetFileNameWithoutExtension($file).Split("_analysis_")[0]
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "### Job Name: $job_name"
-            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "Appending content of file: $file into summary"
+            # Remove the line that appends the file content message
             (Get-Content $file) -replace 'Root Cause Summary:', 'Root cause of Job failure:' | Add-Content -Path $env:GITHUB_STEP_SUMMARY
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ""
           }
@@ -173,6 +180,8 @@ runs:
         Write-Output "Debug: Displaying summary file content..."
         Get-Content $env:GITHUB_STEP_SUMMARY
       shell: pwsh
+
+
 
 
 

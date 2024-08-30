@@ -21,11 +21,11 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Checkout logs_summary_action repository
+    - name: Checkout action repository
       uses: actions/checkout@v4
-      # with:
-      #   repository: shivendratiwari07/logs_summary_action
-      #   path: logs_summary_action
+      with:
+        repository: shivendratiwari07/action_repo
+        path: action_repo  # This will place the repo contents in the 'action_repo' folder
 
     - name: Set up Python 3.12
       uses: actions/setup-python@v4
@@ -34,9 +34,9 @@ runs:
 
     - name: Install dependencies
       run: |
-        python -m venv myenv
-        source myenv/bin/activate
-        pip install -r requirements.txt
+        python -m venv action_repo/myenv
+        source action_repo/myenv/bin/activate
+        pip install -r action_repo/requirements.txt
         pip install requests
       shell: bash
 
@@ -114,26 +114,25 @@ runs:
         export REPO_NAME="${{ inputs.repo_name }}"
         export CUSTOM_SERVICE_COOKIE="${{ inputs.custom_service_cookie }}"
         export GITHUB_RUN_ID="${{ inputs.run_id }}"
-        source  myenv/bin/activate
+        source action_repo/myenv/bin/activate
         echo "Current directory:"
         pwd
         echo "Listing the root directory files:"
-        ls -la 
-        python script/debug_fetch_logs.py
+        ls -la action_repo
+        python action_repo/script/debug_fetch_logs.py
       shell: bash
 
     - name: List files after analysis
       run: |
-        echo "Listing the files in the script directory"
-        ls -la script/
-        #ls -la action_repo/script/
+        echo "Listing the files in the action_repo/script directory"
+        ls -la action_repo/script/
       shell: bash
 
     - name: Display analysis summary
       if: always()
       run: |
         echo "Debug: Checking if summary files exist..."
-        summary_files=$(ls script/*_analysis_*.txt 2>/dev/null || true)
+        summary_files=$(ls action_repo/script/*_analysis_*.txt 2>/dev/null || true)
         echo "Found summary files: $summary_files"
         if [ -n "$summary_files" ]; then
           for file in $summary_files; do

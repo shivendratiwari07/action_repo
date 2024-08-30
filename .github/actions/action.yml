@@ -22,10 +22,10 @@ runs:
   using: 'composite'
   steps:
     - name: Checkout logs_summary_action repository
-      uses: actions/checkout@v2
-      with:
-        repository: shivendratiwari07/logs_summary_action
-        path: logs_summary_action
+      uses: actions/checkout@v4
+      # with:
+      #   repository: shivendratiwari07/logs_summary_action
+      #   path: logs_summary_action
 
     - name: Set up Python 3.12
       uses: actions/setup-python@v4
@@ -34,9 +34,9 @@ runs:
 
     - name: Install dependencies
       run: |
-        python -m venv logs_summary_action/myenv
-        source logs_summary_action/myenv/bin/activate
-        pip install -r logs_summary_action/requirements.txt
+        python -m venv myenv
+        source myenv/bin/activate
+        pip install -r requirements.txt
         pip install requests
       shell: bash
 
@@ -114,11 +114,11 @@ runs:
         export REPO_NAME="${{ inputs.repo_name }}"
         export CUSTOM_SERVICE_COOKIE="${{ inputs.custom_service_cookie }}"
         export GITHUB_RUN_ID="${{ inputs.run_id }}"
-        source logs_summary_action/myenv/bin/activate
+        source  myenv/bin/activate
         echo "Current directory:"
         pwd
         echo "Listing the root directory files:"
-        ls -la logs_summary_action
+        ls -la 
         python script/debug_fetch_logs.py
       shell: bash
 

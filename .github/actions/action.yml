@@ -112,19 +112,31 @@ runs:
         }
       shell: pwsh
 
-    - name: Run log analysis
-      if: ${{ steps.fetch_job_statuses.outputs.run_analysis == 'true' }}
+    - name: Run log analysis (Linux/macOS)
+      if: runner.os != 'Windows' && steps.fetch_job_statuses.outputs.run_analysis == 'true'
+      run: |
+        export GITHUB_TOKEN="${{ inputs.github_token }}"
+        export REPO_OWNER="${{ inputs.repo_owner }}"
+        export REPO_NAME="${{ inputs.repo_name }}"
+        export CUSTOM_SERVICE_COOKIE="${{ inputs.custom_service_cookie }}"
+        export GITHUB_RUN_ID="${{ inputs.run_id }}"
+        source action_repo/myenv/bin/activate
+        echo "Current directory:"
+        pwd
+        echo "Listing the root directory files:"
+        ls -la action_repo/.github/actions/script/
+        python action_repo/.github/actions/script/debug_fetch_logs.py
+      shell: bash
+
+    - name: Run log analysis (Windows)
+      if: runner.os == 'Windows' && steps.fetch_job_statuses.outputs.run_analysis == 'true'
       run: |
         $env:GITHUB_TOKEN = "${{ inputs.github_token }}"
         $env:REPO_OWNER = "${{ inputs.repo_owner }}"
         $env:REPO_NAME = "${{ inputs.repo_name }}"
         $env:CUSTOM_SERVICE_COOKIE = "${{ inputs.custom_service_cookie }}"
         $env:GITHUB_RUN_ID = "${{ inputs.run_id }}"
-        if ($IsWindows) {
-          .\action_repo\myenv\Scripts\Activate
-        } else {
-          source action_repo/myenv/bin/activate
-        }
+        .\action_repo\myenv\Scripts\Activate
         Write-Output "Current directory:"
         Get-Location
         Write-Output "Listing the root directory files:"
@@ -161,6 +173,7 @@ runs:
         Write-Output "Debug: Displaying summary file content..."
         Get-Content $env:GITHUB_STEP_SUMMARY
       shell: pwsh
+
 
 
 

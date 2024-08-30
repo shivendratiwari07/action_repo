@@ -125,7 +125,7 @@ runs:
         pwd
         echo "Listing the root directory files:"
         ls -la action_repo
-        python action_repo/script/debug_fetch_logs.py
+        python action_repo/.github/actions/script/debug_fetch_logs.py
       shell: bash
 
     - name: List files after analysis

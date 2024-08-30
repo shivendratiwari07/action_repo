@@ -28,10 +28,9 @@ runs:
         path: action_repo
     - name: List files after Checkout action repository
       run: |
-        echo "Listing the files in the action_repo/script directory"
+        echo "Listing the files in the action_repo directory"
         pwd
         ls -la action_repo
-        ls -la action_repo/script/
       shell: bash
 
     - name: Set up Python 3.12

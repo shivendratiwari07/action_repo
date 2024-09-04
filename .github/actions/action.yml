@@ -59,7 +59,7 @@ runs:
     - name: Wait for relevant jobs to complete or timeout
       id: wait_for_jobs
       run: |
-        $max_attempts = 15
+        $max_attempts = 720
         $sleep_time = 10
         $attempt = 0
         $all_jobs_completed = $false

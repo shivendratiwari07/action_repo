@@ -8,6 +8,7 @@ MAX_TOKENS = 1000
 DEFAULT_TIMEOUT = 20
 
 def chunk_text_by_tokens(text, max_tokens, tokenizer):
+    """Chunks text into manageable sizes based on token count."""
     tokens = tokenizer.encode(text)
     token_chunks = [tokens[i:i + max_tokens] for i in range(0, len(tokens), max_tokens)]
     return [tokenizer.decode(chunk) for chunk in token_chunks]
@@ -29,16 +30,22 @@ def extract_failed_steps(jobs):
     """Extract failed steps from the jobs data."""
     failed_steps = []
     for job in jobs:
+        # Ensure 'repository' and nested keys exist before accessing
+        repository = job.get('repository', {})
+        owner = repository.get('owner', {})
+        repo_name = repository.get('name', 'unknown')
+        owner_login = owner.get('login', 'unknown')
+
         job_logs_url = (
             f"https://api.github.com/repos/"
-            f"{job['repository']['owner']['login']}/"
-            f"{job['repository']['name']}/actions/jobs/{job['id']}/logs"
+            f"{owner_login}/{repo_name}/actions/jobs/{job['id']}/logs"
         )
+        
         for step in job.get("steps", []):
             if step.get("conclusion") == "failure":
                 failed_steps.append({
-                    "job_name": job.get("name"),
-                    "step_name": step.get("name"),
+                    "job_name": job.get("name", "unknown"),
+                    "step_name": step.get("name", "unknown"),
                     "job_logs_url": job_logs_url
                 })
     return failed_steps
@@ -74,7 +81,7 @@ def analyze_logs_with_custom_service(log_chunks):
                         "type": "text",
                         "text": (
                             "Provide only a summary of the root cause of the job failure. "
-                            "Print the file name, line number and code exactly where job failed:\n\n"
+                            "Print the file name, line number, and code exactly where the job failed:\n\n"
                             + combined_logs
                         )
                     }

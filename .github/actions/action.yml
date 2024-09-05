@@ -72,14 +72,14 @@ runs:
             exit 1
           }
 
-          $incomplete_jobs = $response.jobs | Where-Object { $_.name -notmatch "collect-logs" -and ($_.status -eq "queued" -or $_.status -eq "in_progress") }
+          $incomplete_jobs = $response.jobs | Where-Object { $_.name -notmatch "log_analysis" -and ($_.status -eq "queued" -or $_.status -eq "in_progress") }
 
           if ($incomplete_jobs.Count -eq 0) {
             Write-Output "All relevant jobs have completed."
             $all_jobs_completed = $true
             break
           } else {
-            Write-Output "Jobs still in progress or queued (excluding collect-logs):"
+            Write-Output "Jobs still in progress or queued (excluding log_analysis):"
             $incomplete_jobs.name
             Write-Output "Waiting for relevant jobs to complete..."
           }
@@ -125,7 +125,7 @@ runs:
         pwd
         echo "Listing the root directory files:"
         ls -la action_repo/.github/actions/script/
-        python action_repo/.github/actions/script/debug_fetch_logs.py
+        python action_repo/.github/actions/script/log_analysis.py
       shell: bash
 
     - name: Run log analysis (Windows)
@@ -141,7 +141,7 @@ runs:
         Get-Location
         Write-Output "Listing the root directory files:"
         Get-ChildItem action_repo/.github/actions/script/
-        python action_repo/.github/actions/script/debug_fetch_logs.py
+        python action_repo/.github/actions/script/log_analysis.py
       shell: pwsh
 
     - name: List files after analysis
@@ -173,169 +173,3 @@ runs:
         Write-Output "Debug: Displaying summary file content..."
         Get-Content $env:GITHUB_STEP_SUMMARY
       shell: pwsh
-
-
-
-
-
-
-# name: 'Collect Logs and Analyze'
-# description: 'Action to collect logs from a failed workflow run and analyze them using a Python script.'
-
-# inputs:
-#   run_id:
-#     description: 'The workflow run ID to analyze'
-#     required: true
-#   repo_owner:
-#     description: 'The owner of the repository'
-#     required: true
-#   repo_name:
-#     description: 'The name of the repository'
-#     required: true
-#   github_token:
-#     description: 'GitHub token'
-#     required: true
-#   custom_service_cookie:
-#     description: 'Custom service cookie'
-#     required: true
-
-# runs:
-#   using: 'composite'
-#   steps:
-#     - name: Checkout action repository
-#       uses: actions/checkout@v4
-#       with:
-#         repository: shivendratiwari07/action_repo
-#         path: action_repo
-#     - name: List files after Checkout action repository
-#       run: |
-#         echo "Listing the files in the action_repo directory"
-#         pwd
-#         ls -la action_repo
-#       shell: bash
-
-#     - name: Set up Python 3.12
-#       uses: actions/setup-python@v4
-#       with:
-#         python-version: '3.12'
-
-#     - name: Install dependencies
-#       run: |
-#         python -m venv action_repo/myenv
-#         source action_repo/myenv/bin/activate
-#         pip install -r action_repo/requirements.txt
-#         pip install requests
-#       shell: bash
-
-#     - name: Wait for relevant jobs to complete or timeout
-#       id: wait_for_jobs
-#       run: |
-#         MAX_ATTEMPTS=15
-#         SLEEP_TIME=10
-#         ATTEMPT=0
-#         all_jobs_completed=false
-#         while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-#           response=$(curl -s -H "Authorization: token ${{ inputs.github_token }}" \
-#             "https://api.github.com/repos/${{ inputs.repo_owner }}/${{ inputs.repo_name }}/actions/runs/${{ inputs.run_id }}/jobs")
-          
-#           # Print the raw response for debugging
-#           #echo "Raw API response:"
-#           #echo "$response"
-          
-#           if [ $? -ne 0 ] || [ -z "$response" ]; then
-#             echo "Error fetching workflow jobs or empty response. Exiting..."
-#             exit 1
-#           fi
-
-#           # Check if the response is valid JSON and contains jobs
-#           if echo "$response" | jq -e '.jobs' > /dev/null 2>&1; then
-#             # Filter out jobs that have "dispatch-job" or "collect-logs" in their name
-#             incomplete_jobs=$(echo "$response" | jq -r '.jobs[] | select(.name | test("collect-logs") | not) | select(.status == "queued" or .status == "in_progress")')
-#             if [ -z "$incomplete_jobs" ]; then
-#               echo "All relevant jobs have completed."
-#               all_jobs_completed=true
-#               break
-#             else
-#               echo "Jobs still in progress or queued (excluding  collect-logs):"
-#               echo "$incomplete_jobs" | jq -r '.name'
-#               echo "Waiting for relevant jobs to complete..."
-#             fi
-#           else
-#             echo "Error: Invalid or empty response from GitHub API."
-#             exit 1
-#           fi
-
-#           ATTEMPT=$((ATTEMPT + 1))
-#           sleep $SLEEP_TIME
-#         done
-
-#         if [ "$all_jobs_completed" = false ]; then
-#           echo "Jobs did not complete within the expected time. Proceeding with available job statuses."
-#         fi
-
-#         echo "$response" > jobs_response.json
-#       shell: bash
-
-#     - name: Fetch and analyze job statuses
-#       id: fetch_job_statuses
-#       run: |
-#         response=$(cat jobs_response.json)
-#         echo "Listing all job statuses:"
-#         echo "$response" | jq -r '.jobs[]? | "\(.name) - \(.conclusion) - Job ID: \(.id)"'
-#         echo "$response" | jq -r '.jobs[]? | "\(.name) - \(.conclusion)"' > job_statuses.txt
-#         grep "failure" job_statuses.txt > failed_jobs.txt || true
-#         if [ -s failed_jobs.txt ]; then
-#           echo "Failed jobs detected."
-#           echo "::set-output name=run_analysis::true"
-#         else
-#           echo "No failed jobs detected. Skipping log analysis."
-#           echo "::set-output name=run_analysis::false"
-#         fi
-#       shell: bash
-
-#     - name: Run log analysis
-#       if: ${{ steps.fetch_job_statuses.outputs.run_analysis == 'true' }}
-#       run: |
-#         export GITHUB_TOKEN="${{ inputs.github_token }}"
-#         export REPO_OWNER="${{ inputs.repo_owner }}"
-#         export REPO_NAME="${{ inputs.repo_name }}"
-#         export CUSTOM_SERVICE_COOKIE="${{ inputs.custom_service_cookie }}"
-#         export GITHUB_RUN_ID="${{ inputs.run_id }}"
-#         source action_repo/myenv/bin/activate
-#         echo "Current directory:"
-#         pwd
-#         echo "Listing the root directory files:"
-#         ls -la action_repo/.github/actions/script/
-#         python action_repo/.github/actions/script/debug_fetch_logs.py
-#       shell: bash
-
-#     - name: List files after analysis
-#       run: |
-#         echo "Listing the files in the action_repo/.github/actions/script directory"
-#         ls -la action_repo/.github/actions/script/
-#       shell: bash
-
-#     - name: Display analysis summary
-#       if: always()
-#       run: |
-#         echo "Debug: Checking if summary files exist..."
-#         summary_files=$(ls action_repo/.github/actions/script/*_analysis_*.txt 2>/dev/null || true)
-#         echo "Found summary files: $summary_files"
-#         if [ -n "$summary_files" ]; then
-#           for file in $summary_files; do
-#             job_name=$(basename "$file" | sed 's/_analysis_.*//')
-#             echo "### Job Name: $job_name" >> $GITHUB_STEP_SUMMARY
-#             echo "Appending content of file: $file into summary"
-#             sed 's/Root Cause Summary:/Root cause of Job failure:/g' "$file" >> $GITHUB_STEP_SUMMARY
-#             echo "" >> $GITHUB_STEP_SUMMARY
-#           done
-#         else
-#           echo "### All jobs ran successfully" >> $GITHUB_STEP_SUMMARY
-#         fi
-#       shell: bash
-
-#     - name: Display summary
-#       run: |
-#         echo "Debug: Displaying summary file content..."
-#         cat $GITHUB_STEP_SUMMARY
-#       shell: bash

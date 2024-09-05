@@ -1,6 +1,6 @@
 import argparse
 import os
-from datetime import datetime 
+from datetime import datetime
 import requests
 import tiktoken
 
@@ -20,27 +20,18 @@ def get_failed_steps(owner, repo, run_id, headers):
         response = requests.get(url, headers=headers, timeout=DEFAULT_TIMEOUT)
         response.raise_for_status()
         jobs = response.json().get("jobs", [])
-        failed_steps = extract_failed_steps(jobs)
+        failed_steps = extract_failed_steps(jobs, owner, repo)
         return failed_steps
     except requests.exceptions.RequestException as e:
         print(f"Failed to fetch failed steps: {e}")
         return []
 
-def extract_failed_steps(jobs):
+def extract_failed_steps(jobs, repo_owner, repo_name):
     """Extract failed steps from the jobs data."""
     failed_steps = []
     for job in jobs:
-        # Ensure 'repository' and nested keys exist before accessing
-        repository = job.get('repository', {})
-        owner = repository.get('owner', {})
-        repo_name = repository.get('name', 'unknown')
-        owner_login = owner.get('login', 'unknown')
-
-        job_logs_url = (
-            f"https://api.github.com/repos/"
-            f"{owner_login}/{repo_name}/actions/jobs/{job['id']}/logs"
-        )
-        
+        # Directly use the passed repo_owner and repo_name
+        job_logs_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/actions/jobs/{job['id']}/logs"
         for step in job.get("steps", []):
             if step.get("conclusion") == "failure":
                 failed_steps.append({
@@ -64,7 +55,7 @@ def download_logs(logs_url, headers, output_filename):
         print(f"Failed to download logs: {e}")
         return False
 
-def analyze_logs_with_custom_service(log_chunks):
+def analyze_logs_with_custom_service(log_chunks, tokenizer):
     """Send log chunks to a custom analysis service."""
     url = "https://www.dex.inside.philips.com/philips-ai-chat/chat/api/user/SendImageMessage"
     headers = {
@@ -79,11 +70,9 @@ def analyze_logs_with_custom_service(log_chunks):
                 "content": [
                     {
                         "type": "text",
-                        "text": (
-                            "Provide only a summary of the root cause of the job failure. "
-                            "Print the file name, line number, and code exactly where the job failed:\n\n"
-                            + combined_logs
-                        )
+                        "text": "Provide only a summary of the root cause of the job failure. "
+                                "Print the file name, line number and code exactly where job failed:\n\n"
+                                + combined_logs
                     }
                 ]
             }
@@ -113,7 +102,7 @@ def process_failed_step(step, headers, tokenizer):
             log_content = file.read()
 
         log_chunks = chunk_text_by_tokens(log_content, MAX_TOKENS, tokenizer)
-        summary = analyze_logs_with_custom_service(log_chunks)
+        summary = analyze_logs_with_custom_service(log_chunks, tokenizer)
 
         print(summary)
 
